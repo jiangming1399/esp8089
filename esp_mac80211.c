@@ -389,8 +389,9 @@ static bool beacon_tim_alter(struct sk_buff *beacon)
 
 unsigned long init_jiffies;
 unsigned long cycle_beacon_count;
-static void drv_handle_beacon(unsigned long data)
+static void drv_handle_beacon(struct timer_list *tl)
 {
+    unsigned long data = tl->flags;
 	struct ieee80211_vif *vif = (struct ieee80211_vif *) data;
 	struct esp_vif *evif = (struct esp_vif *) vif->drv_priv;
 	struct sk_buff *beacon;
@@ -448,15 +449,13 @@ static void init_beacon_timer(struct ieee80211_vif *vif)
 			  __func__, evif->beacon_interval);
 
 	beacon_tim_init();
-	init_timer(&evif->beacon_timer);	//TBD, not init here...
+	timer_setup(&evif->beacon_timer, drv_handle_beacon, (unsigned long)vif); //TBD, not init here...
 	cycle_beacon_count = 1;
 	init_jiffies = jiffies;
 	evif->beacon_timer.expires =
 	    init_jiffies +
 	    msecs_to_jiffies(cycle_beacon_count *
 			     vif->bss_conf.beacon_int * 1024 / 1000);
-	evif->beacon_timer.data = (unsigned long) vif;
-	evif->beacon_timer.function = drv_handle_beacon;
 	add_timer(&evif->beacon_timer);
 }
 
